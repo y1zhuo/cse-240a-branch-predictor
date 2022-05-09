@@ -1,10 +1,12 @@
 #ifndef PTABLE_H
 #define PTABLE_H
 
-#include <string.h>
+
 #include <stdbool.h>
-#include <assert.h>
 #include <stdlib.h>
+
+
+#define PCBIT 2
 
 typedef struct _PTable{
     uint32_t *data;

@@ -1,11 +1,9 @@
 #ifndef TOURNAMENT_H
 #define TOURNAMENT_H
-#include <string.h>
 #include <stdbool.h>
-#include <assert.h>
 #include <stdlib.h>
 #include "ptable.h"
-#define PCBIT 2
+#include "helper_function.h"
 
 
 typedef struct _Tournament_Predictor

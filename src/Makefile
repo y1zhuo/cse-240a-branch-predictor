@@ -1,8 +1,8 @@
 CC=gcc
 OPTS=-g -std=c99 -Werror
 
-all: main.o predictor.o predictor.o ptable.o
-	$(CC) $(OPTS) -lm -o predictor main.o predictor.o tournament.o ptable.o
+all: main.o predictor.o predictor.o ptable.o helper_function.o
+	$(CC) $(OPTS) -lm -o predictor main.o predictor.o tournament.o ptable.o helper_function.o
 
 main.o: main.c predictor.h
 	$(CC) $(OPTS) -c main.c
@@ -15,6 +15,9 @@ tournament.o: tournament.c tournament.h
 
 ptable.o: ptable.c ptable.h
 	$(CC) $(OPTS) -c ptable.c
+
+helper_function.o: helper_function.c helper_function.h
+	$(CC) $(OPTS) -c helper_function.c
 
 clean:
 	rm -f *.o predictor;
