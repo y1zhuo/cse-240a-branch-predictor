@@ -5,13 +5,13 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "ptable.h"
-#define BHTBIT 2
+#define PCBIT 2
 
 
 typedef struct _Tournament_Predictor
 {
     int globalPH, globalPHbits, pcIdxBits, localPHbits;
-    PTable localPHT, localBHT;
+    PTable localPHT, localBHT, globalBHT, choiceBHT;
 
 } TNM_Predictor;
 
@@ -21,9 +21,15 @@ void deleteTNMPredictor(TNM_Predictor *predictor);
 
 bool localPredictor(TNM_Predictor *predictor, uint32_t pc);
 
+bool globalPredictor(TNM_Predictor *predictor);
+
 uint8_t TNMpredict(TNM_Predictor *predictor, uint32_t pc);
 
 void TNMtrain(TNM_Predictor *predictor, uint32_t pc, uint8_t outcome);
+
+// Global Variables
+int localPattern, localVal, globalVal, choiceVal; // local predictor
+bool localRes, glocalRes, choiceRes;    // prediction outcome
 
 
 #endif
