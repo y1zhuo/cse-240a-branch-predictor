@@ -34,7 +34,7 @@ int updateBHT(int prev, bool result){
     }
 }
 
-int updatePHT(int prev, int bits, bool outcome){
+int updatePHT(int prev, int bits, uint8_t outcome){
   int mask = (1<<(bits)) - 1;
   return ((prev<<1) + (outcome ? 1 : 0) ) & mask;
 }
@@ -77,7 +77,7 @@ void TNMtrain(TNM_Predictor *predictor, uint32_t pc, uint8_t outcome){
     int pattern = getEntry(&predictor->localPHT, pc & mask);
     int prev = getEntry(&predictor->localBHT,pattern);
     bool localRes = getResultFromBHT(prev);
-    setEntry(&predictor->localBHT, pattern, updateBHT(prev, localRes));
+    setEntry(&predictor->localBHT, pattern, updateBHT(prev, outcome));
     pattern = updatePHT(pattern, predictor->localPHbits, outcome);
     setEntry(&predictor->localPHT, pc & mask, pattern);
 
