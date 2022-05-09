@@ -5,16 +5,15 @@
 //  Implement the various branch predictors below as      //
 //  described in the README                               //
 //========================================================//
-#include <stdio.h>
-#include <math.h>
+
 #include "predictor.h"
 
 //
 // TODO:Student Information
 //
-const char *studentName = "Gandhar Deshpande";
-const char *studentID   = "A59005457";
-const char *email       = "gdeshpande@ucsd.edu";
+const char *studentName = "Yue Zhuo";
+const char *studentID   = "A16110292";
+const char *email       = "y1zhuo@ucsd.edu";
 
 //------------------------------------//
 //      Predictor Configuration       //
@@ -25,7 +24,9 @@ const char *bpName[4] = { "Static", "Gshare",
                           "Tournament", "Custom" };
 
 //define number of bits required for indexing the BHT here. 
-int ghistoryBits = 10; // Number of bits used for Global History
+int ghistoryBits = 14; // Number of bits used for Global History
+int lhistoryBits; // Number of bits used for Local History
+int pcIndexBits;  // Number of bits used for PC index
 int bpType;       // Branch Prediction Type
 int verbose;
 
@@ -38,8 +39,11 @@ int verbose;
 //TODO: Add your own Branch Predictor data structures here
 //
 //gshare
-int *gpredictors;
-int gHistoryTable;
+u_int8_t *bht_gshare;
+u_int8_t ghistory;
+
+// Tournament
+TNM_Predictor *tnm;
 
 
 //------------------------------------//
@@ -51,24 +55,26 @@ int gHistoryTable;
 
 //gshare functions
 void init_gshare() {
-  int historyBits = 1 << ghistoryBits;
-  gpredictors = (int*) malloc(historyBits * sizeof(int));
-  for(int i = 0; i <= historyBits; i++) {
-    gpredictors[i] = WN;
+  int bht_entries = 1 << ghistoryBits;
+  bht_gshare = (uint8_t*)malloc(bht_entries * sizeof(uint8_t));
+  int i = 0;
+  for(i = 0; i< bht_entries; i++){
+    bht_gshare[i] = WN;
   }
-  gHistoryTable = 0;
+  ghistory = 0;
 }
 
 
 
 uint8_t 
 gshare_predict(uint32_t pc) {
-  int historyBits = 1 << ghistoryBits;
-  int pc_lower_bits = pc & (historyBits - 1);
-  int ghistory_lower = gHistoryTable & (historyBits - 1);
-  int historyIndex = pc_lower_bits ^ (ghistory_lower);
+  //get lower ghistoryBits of pc
+  uint32_t bht_entries = 1 << ghistoryBits;
+  uint32_t pc_lower_bits = pc & (bht_entries-1);
+  uint32_t ghistory_lower_bits = ghistory & (bht_entries -1);
+  uint32_t index = pc_lower_bits ^ ghistory_lower_bits;
 
-  switch(gpredictors[historyIndex]) {
+switch(bht_gshare[index]){
     case SN:
       return NOTTAKEN;
     case WN:
@@ -78,42 +84,48 @@ gshare_predict(uint32_t pc) {
     case ST:
       return TAKEN;
     default:
-      printf("Undefined state in predictor table");
+      printf("Warning: Undefined state of entry in GSHARE BHT!\n");
       return NOTTAKEN;
   }
 }
 
 void
 train_gshare(uint32_t pc, uint8_t outcome) {
-  uint32_t historyBits = 1 << ghistoryBits;
-  uint32_t pc_lower_bits = pc & (historyBits - 1);
-  uint32_t ghistory_lower = gHistoryTable & (historyBits - 1);
-  uint32_t historyIndex = pc_lower_bits ^ (ghistory_lower);
+  //get lower ghistoryBits of pc
+  uint32_t bht_entries = 1 << ghistoryBits;
+  uint32_t pc_lower_bits = pc & (bht_entries-1);
+  uint32_t ghistory_lower_bits = ghistory & (bht_entries -1);
+  uint32_t index = pc_lower_bits ^ ghistory_lower_bits;
 
-  switch(gpredictors[historyIndex]) {
+  //Update state of entry in bht based on outcome
+  switch(bht_gshare[index]){
     case SN:
-      gpredictors[historyIndex] = (outcome == TAKEN) ? WN : SN;
+      bht_gshare[index] = (outcome==TAKEN)?WN:SN;
       break;
     case WN:
-      gpredictors[historyIndex] = (outcome == TAKEN) ? WT : SN;
+     bht_gshare[index] = (outcome==TAKEN)?WT:SN;
       break;
     case WT:
-      gpredictors[historyIndex] = (outcome == TAKEN) ? ST : WN;
+      bht_gshare[index] = (outcome==TAKEN)?ST:WN;
       break;
     case ST:
-      gpredictors[historyIndex] = (outcome == TAKEN) ? ST : WT;
+      bht_gshare[index] = (outcome==TAKEN)?ST:WT;
       break;
     default:
+    printf("Warning: Undefined state of entry in GSHARE BHT!\n");
       break;
   }
-  gHistoryTable = (1 << gHistoryTable) | outcome;
+  ghistory = ((ghistory << 1) | outcome); 
 }
 
 void
 cleanup_gshare() {
-  free(gpredictors);
+  free(bht_gshare);
 }
 
+void cleanup_TNM(){
+  deleteTNMPredictor(tnm);
+}
 
 
 void
@@ -125,6 +137,8 @@ init_predictor()
       init_gshare();
       break;
     case TOURNAMENT:
+      tnm = initTournament(lhistoryBits, ghistoryBits, pcIndexBits);
+      break;
     case CUSTOM:
     default:
       break;
@@ -147,6 +161,7 @@ make_prediction(uint32_t pc)
     case GSHARE:
       return gshare_predict(pc);
     case TOURNAMENT:
+      return TNMpredict(tnm, pc);
     case CUSTOM:
     default:
       break;
@@ -168,8 +183,11 @@ train_predictor(uint32_t pc, uint8_t outcome)
   switch (bpType) {
     case STATIC:
     case GSHARE:
-      return train_gshare(pc, outcome);
+      train_gshare(pc, outcome);
+      break;
     case TOURNAMENT:
+      TNMtrain(tnm, pc, outcome);
+      break;
     case CUSTOM:
     default:
       break;

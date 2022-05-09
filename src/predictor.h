@@ -11,7 +11,9 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-
+#include <stdio.h>
+#include <math.h>
+#include "tournament.h"
 //
 // Student Information
 //
@@ -66,5 +68,9 @@ uint8_t make_prediction(uint32_t pc);
 // indicates that the branch was not taken)
 //
 void train_predictor(uint32_t pc, uint8_t outcome);
+
+void cleanup_gshare();
+
+void cleanup_TNM();
 
 #endif
