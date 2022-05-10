@@ -12,8 +12,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <math.h>
-#include "tournament.h"
 //
 // Student Information
 //
@@ -39,6 +39,7 @@ extern const char *bpName[];
 #define WN  1			// predict NT, weak not taken
 #define WT  2			// predict T, weak taken
 #define ST  3			// predict T, strong taken
+#define PCBIT 2
 
 //------------------------------------//
 //      Predictor Configuration       //
@@ -72,5 +73,67 @@ void train_predictor(uint32_t pc, uint8_t outcome);
 void cleanup_gshare();
 
 void cleanup_TNM();
+
+// -------Table Class---------------
+
+typedef struct _PTable{
+    uint32_t *data;
+    int bitsSize;
+    int height;
+} PTable;
+
+PTable createPTable(int cnt, int size);
+
+void deleteTable(PTable *table);
+
+uint32_t getEntry(PTable *table, int index);
+
+void setEntry(PTable *table, int index, uint32_t entry);
+
+// ------Helper Function----------------------------
+
+int bitCnt(int bits);
+
+void initialBHT(PTable * table);
+
+bool getResultFromBHT(int val);
+
+int updateBHT(int prev, bool result);
+
+int updatePHT(int prev, int bits, uint8_t outcome);
+
+// ---------------Tournament_Predictor---------------------------
+
+typedef struct _Tournament_Predictor
+{
+    int globalPH, globalPHbits, pcIdxBits, localPHbits;
+    PTable localPHT, localBHT, globalBHT, choiceBHT;
+
+} TNM_Predictor;
+
+TNM_Predictor* initTournament(int localHistBit, int globalHistBit, int pcIndexBit);
+
+void deleteTNMPredictor(TNM_Predictor *predictor);
+
+bool localPredictor(TNM_Predictor *predictor, uint32_t pc);
+
+bool globalPredictor(TNM_Predictor *predictor);
+
+uint8_t TNMpredict(TNM_Predictor *predictor, uint32_t pc);
+
+void TNMtrain(TNM_Predictor *predictor, uint32_t pc, uint8_t outcome);
+
+// Global Variables
+int localPattern, localVal, globalVal, choiceVal; // local predictor
+bool localRes, glocalRes, choiceRes;    // prediction outcome
+
+// ----------------------------------------------------
+typedef struct _Custom_Predictor
+{
+    uint8_t *choicePHT, *takenPHT, *notTakenPHT;
+
+} Custom_Predictor;
+
+
 
 #endif
