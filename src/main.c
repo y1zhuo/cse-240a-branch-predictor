@@ -46,7 +46,7 @@ handle_option(char *arg)
     bpType = GSHARE;
   } else if (!strncmp(arg,"--tournament",12)) {
     bpType = TOURNAMENT;
-    sscanf(arg+13,"%d:%d:%d", &lhistoryBits, &ghistoryBits,  &pcIndexBits);
+    // sscanf(arg+13,"%d:%d:%d", &lhistoryBits, &ghistoryBits,  &pcIndexBits);
   } else if (!strncmp(arg,"--custom",8)) {
     bpType = CUSTOM;
   } else if (!strcmp(arg,"--verbose")) {
@@ -136,7 +136,8 @@ main(int argc, char *argv[])
   // Cleanup
   fclose(stream);
   free(buf);
-  cleanup_gshare();
-  cleanup_TNM();
+  // cleanup_gshare();
+  // cleanup_TNM();
+  // cleanup_custom();
   return 0;
 }

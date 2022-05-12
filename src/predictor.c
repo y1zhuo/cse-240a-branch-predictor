@@ -64,7 +64,7 @@ bool getResultFromBHT(int val){
     return (val>=valve) ? TAKEN : NOTTAKEN;
 }
 
-int updateBHT(int prev, bool result){
+uint8_t updateBHT(int prev, bool result){
     if(result){
         prev++;
     }
@@ -275,7 +275,7 @@ void TNMtrain(TNM_Predictor *predictor, uint32_t pc, uint8_t outcome){
 }
 
 // ----------------Custom Predictor--------------------
-Custom_Predictor* initialCustom(){
+Custom_Predictor* initCustom(){
   Custom_Predictor *custom = (Custom_Predictor*)malloc(sizeof(Custom_Predictor));
   ghistoryBits = 12;
   custom->pht_size = 1<<ghistoryBits;
@@ -343,10 +343,11 @@ init_predictor()
       init_gshare();
       break;
     case TOURNAMENT:
-      tnm = initTournament(lhistoryBits, ghistoryBits, pcIndexBits);
+      // tnm = initTournament(lhistoryBits, ghistoryBits, pcIndexBits);
+      tnm = initTournament(10, 12, 10);
       break;
     case CUSTOM:
-      cPredictor = initialCustom();
+      cPredictor = initCustom();
     default:
       break;
   }

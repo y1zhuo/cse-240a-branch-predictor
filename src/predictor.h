@@ -98,7 +98,7 @@ void initialBHT(PTable * table);
 
 bool getResultFromBHT(int val);
 
-int updateBHT(int prev, bool result);
+uint8_t updateBHT(int prev, bool result);
 
 int updatePHT(int prev, int bits, uint8_t outcome);
 
@@ -138,7 +138,7 @@ typedef struct _Custom_Predictor
 
 void cleanup_custom();
 
-Custom_Predictor* initialCustom();
+Custom_Predictor* initCustom();
 
 bool customPredict(Custom_Predictor *predictor, uint32_t pc);
 
