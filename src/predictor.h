@@ -74,7 +74,7 @@ void cleanup_gshare();
 
 void cleanup_TNM();
 
-// -------Table Class---------------
+// -------Predictor Table Class---------------
 
 typedef struct _PTable{
     uint32_t *data;
@@ -127,13 +127,21 @@ void TNMtrain(TNM_Predictor *predictor, uint32_t pc, uint8_t outcome);
 int localPattern, localVal, globalVal, choiceVal; // local predictor
 bool localRes, glocalRes, choiceRes;    // prediction outcome
 
-// ----------------------------------------------------
+// ------------Custom_Predictor--------------------------
 typedef struct _Custom_Predictor
 {
     uint8_t *choicePHT, *takenPHT, *notTakenPHT;
-
+    uint32_t global_history, mask, index;
+    uint8_t choice, customRes;
+    int pht_size;
 } Custom_Predictor;
 
+void cleanup_custom();
 
+Custom_Predictor* initialCustom();
+
+bool customPredict(Custom_Predictor *predictor, uint32_t pc);
+
+void customTrain(Custom_Predictor *predictor, uint32_t pc, uint8_t outcome);
 
 #endif

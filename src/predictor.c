@@ -46,7 +46,7 @@ uint8_t ghistory;
 TNM_Predictor *tnm;
 
 // Custom
-Custom_Predictor *cp;
+Custom_Predictor *cPredictor;
 
 int bitCnt(int bits){
     return 1<<bits;
@@ -55,7 +55,7 @@ int bitCnt(int bits){
 
 void initialBHT(PTable * table){
     for(int i = 0; i<table->height; i++){
-        setEntry(table, i, 1);
+        setEntry(table, i, WN);
     }
 }
 
@@ -83,7 +83,7 @@ int updateBHT(int prev, bool result){
 }
 
 
-int updatePHT(int prev, int bits, uint8_t outcome){
+int updatePH(int prev, int bits, uint8_t outcome){
   int mask = (1<<(bits)) - 1;
   return ((prev<<1) + (outcome ? 1 : 0) ) & mask;
 }
@@ -186,6 +186,13 @@ void cleanup_TNM(){
   deleteTNMPredictor(tnm);
 }
 
+void cleanup_custom(){
+  free(cPredictor->choicePHT);
+  free(cPredictor->takenPHT);
+  free(cPredictor->notTakenPHT);
+  free(cPredictor);
+}
+
 //---------------------------------
 
 TNM_Predictor* initTournament(int localHistBit, int globalHistBit, int pcIndexBit){
@@ -249,7 +256,7 @@ uint8_t TNMpredict(TNM_Predictor *predictor, uint32_t pc){
 void TNMtrain(TNM_Predictor *predictor, uint32_t pc, uint8_t outcome){
     // Train local predictor
     setEntry(&predictor->localBHT, localPattern, updateBHT(localVal, outcome));
-    localPattern = updatePHT(localPattern, predictor->localPHbits, outcome);
+    localPattern = updatePH(localPattern, predictor->localPHbits, outcome);
     setEntry(&predictor->localPHT, pc & bitCnt(predictor->pcIdxBits)-1, localPattern);
 
     // Train global predictor
@@ -264,8 +271,62 @@ void TNMtrain(TNM_Predictor *predictor, uint32_t pc, uint8_t outcome){
     }
 
     // Update global history
-    predictor->globalPH = updatePHT(predictor->globalPH, predictor->localPHbits, outcome);
+    predictor->globalPH = updatePH(predictor->globalPH, predictor->localPHbits, outcome);
 }
+
+// ----------------Custom Predictor--------------------
+Custom_Predictor* initialCustom(){
+  Custom_Predictor *custom = (Custom_Predictor*)malloc(sizeof(Custom_Predictor));
+  ghistoryBits = 12;
+  custom->pht_size = 1<<ghistoryBits;
+  custom->mask = custom->pht_size-1;
+  custom->global_history = 0;
+  custom->choicePHT = (uint8_t*)malloc(sizeof(uint8_t) * custom->pht_size);
+  custom->takenPHT = (uint8_t*)malloc(sizeof(uint8_t) * custom->pht_size);
+  custom->notTakenPHT = (uint8_t*)malloc(sizeof(uint8_t) * custom->pht_size);
+
+  // initial PHT
+  for(int i = 0; i < custom->pht_size; i++){
+    custom->choicePHT[i] = WN;
+    custom->notTakenPHT[i] = WN;
+    custom->takenPHT[i] = WT;
+  }
+
+  return custom;
+}
+
+
+
+bool customPredict(Custom_Predictor *predictor, uint32_t pc){
+    predictor->index = (pc ^ predictor->global_history) & predictor->mask;
+    pc = pc & predictor->mask;
+    predictor->choice = getResultFromBHT(predictor->choicePHT[pc]);
+    if(predictor->choice){
+      predictor->customRes = getResultFromBHT(predictor->takenPHT[predictor->index]);
+    }
+    else{
+      predictor->customRes = getResultFromBHT(predictor->notTakenPHT[predictor->index]);
+    }
+    return predictor->customRes;
+}
+
+void customTrain(Custom_Predictor *predictor, uint32_t pc, uint8_t outcome){
+    uint8_t customRes = customPredict(predictor, pc);
+    pc = pc & predictor->mask;
+    
+    if(!(predictor->choice != outcome && customRes == outcome)){
+      predictor->choicePHT[pc] = updateBHT(predictor->choicePHT[pc], outcome);
+    }
+    if(predictor->choice){
+      predictor->takenPHT[predictor->index] = updateBHT(predictor->takenPHT[predictor->index], outcome);
+    }
+    else{
+      predictor->notTakenPHT[predictor->index] = updateBHT(predictor->notTakenPHT[predictor->index], outcome);
+    }
+
+    predictor->global_history = updatePH(predictor->global_history, ghistoryBits, outcome);
+}
+
 
 
 //------------------------------------//
@@ -285,6 +346,7 @@ init_predictor()
       tnm = initTournament(lhistoryBits, ghistoryBits, pcIndexBits);
       break;
     case CUSTOM:
+      cPredictor = initialCustom();
     default:
       break;
   }
@@ -308,6 +370,7 @@ make_prediction(uint32_t pc)
     case TOURNAMENT:
       return TNMpredict(tnm, pc);
     case CUSTOM:
+      return customPredict(cPredictor,pc);
     default:
       break;
   }
@@ -334,6 +397,7 @@ train_predictor(uint32_t pc, uint8_t outcome)
       TNMtrain(tnm, pc, outcome);
       break;
     case CUSTOM:
+      customTrain(cPredictor,pc,outcome);
     default:
       break;
   }

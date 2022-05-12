@@ -9,6 +9,8 @@
         "assert.h": "c",
         "stdbool.h": "c",
         "ptable.h": "c",
-        "helper_function.h": "c"
+        "helper_function.h": "c",
+        "__locale": "c",
+        "ios": "c"
     }
 }
